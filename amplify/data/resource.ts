@@ -26,6 +26,7 @@ const schema = a.schema({
       owner: a.string(),
     })
     .authorization([
+      a.allow.owner(),
       a.allow.public("iam").to(["create", "read"]),
       a.allow.private("iam").to(["create", "read"]),
       a.allow.specificGroup("Support"),

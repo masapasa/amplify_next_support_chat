@@ -63,6 +63,7 @@ export class SupportThreadManager {
             messagesData.data.forEach((message) => {
               this.currentThreadMessages
                 .get(thread.id)
+                // @ts-ignore
                 ?.set(message.id, message);
               if (
                 lastSeenDate === undefined ||
