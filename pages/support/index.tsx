@@ -63,7 +63,7 @@ function Support({ signOut, user }: WithAuthenticatorProps) {
               rowSpan={{ base: 2 }}
             >
                   {threads.map((t) => (
-                    <ThreadLink key={t.id} thread={t} setSelectedThread={setSelectedThread} />
+                    <ThreadLink key={t.id} thread={t} isSelected={selectedThread?.id === t.id} setSelectedThread={setSelectedThread} />
                   ))}
             </View>
             <View className="overflow-y-auto">
