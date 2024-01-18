@@ -15,7 +15,7 @@ function Support({ signOut, user }: WithAuthenticatorProps) {
   const { tokens } = useTheme();
   const [threads, setThreads] = useState<Schema['Thread'][]>([]);
   const [displayedMessages, setDisplayedMessages] = useState<Schema['Message'][]>([]);
-  const [selectedThread, setSelectedThread] = useState<Schema['Thread']>()
+  const [selectedThread, setSelectedThread] = useState<Schema['Thread'] | undefined>()
   const [supportThreadManager, setSupportThreadManager] = useState<SupportThreadManager>()
 
 
@@ -81,7 +81,7 @@ function Support({ signOut, user }: WithAuthenticatorProps) {
                   ))}
             </View>
             <View className="overflow-y-auto">
-              {selectedThread && <SupportThreadChatBox thread={selectedThread} messages={displayedMessages} />}
+              {selectedThread && <SupportThreadChatBox thread={selectedThread} setSelectedThread={setSelectedThread} messages={displayedMessages} />}
             </View>
           </Grid>
         </Flex>

@@ -24,7 +24,13 @@ function MessageBubble({message}: {message: Schema['Message']}) {
 
 }
 
-export function SupportThreadChatBox({thread, messages}: {thread: Schema['Thread'], messages: Schema['Message'][]}) {
+type Props = {
+    thread: Schema['Thread'],
+    messages: Schema['Message'][]
+    setSelectedThread: (thread: Schema['Thread'] | undefined) => void,
+}
+
+export function SupportThreadChatBox({thread, messages, setSelectedThread}: Props) {
     const [currentMessage, setCurrentMessage] = useState<string>("");
 
     const messagesEndRef = useRef(null)
@@ -35,6 +41,7 @@ export function SupportThreadChatBox({thread, messages}: {thread: Schema['Thread
 
     const closeThread = () => {
         client.models.Thread.update({id: thread.id, archived: true});
+        setSelectedThread(undefined);
     }
 
     const sendMessage = (e: React.FormEvent) => {

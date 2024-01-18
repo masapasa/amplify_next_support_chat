@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 type Props = {
     thread: Schema['Thread'],
     isSelected: boolean,
-    setSelectedThread: (thread: Schema['Thread']) => void,
+    setSelectedThread: (thread: Schema['Thread'] | undefined) => void,
     getCount: () => number,
     threadMessagesChanged: Observable<any> | undefined
 }
