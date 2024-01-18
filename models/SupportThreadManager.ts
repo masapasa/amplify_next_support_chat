@@ -68,10 +68,6 @@ export class SupportThreadManager {
                 lastSeenDate === undefined ||
                 new Date(message.createdAt) > lastSeenDate
               ) {
-                console.log(
-                  lastSeenDate === undefined,
-                  new Date(message.createdAt) > lastSeenDate
-                );
                 this.pendingMessageCount.set(
                   thread.id,
                   (this.pendingMessageCount.get(thread.id) || 0) + 1

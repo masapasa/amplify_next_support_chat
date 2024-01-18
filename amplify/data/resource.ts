@@ -15,7 +15,6 @@ const schema = a.schema({
       archived: a.boolean().default(false).required(),
     })
     .authorization([
-      a.allow.owner(),
       a.allow.public("iam").to(["create"]),
       a.allow.private("iam").to(["create"]),
       a.allow.specificGroup("Support"),
@@ -24,9 +23,9 @@ const schema = a.schema({
     .model({
       content: a.string(),
       thread: a.belongsTo("Thread"),
+      owner: a.string(),
     })
     .authorization([
-      a.allow.owner(),
       a.allow.public("iam").to(["create", "read"]),
       a.allow.private("iam").to(["create", "read"]),
       a.allow.specificGroup("Support"),
