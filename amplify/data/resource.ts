@@ -12,6 +12,8 @@ const schema = a.schema({
     .model({
       summary: a.string(),
       messages: a.hasMany("Message"),
+      archived: a.boolean().default(false).required(),
+      //observations: a.hasMany("ThreadObserver"),
     })
     .authorization([
       a.allow.owner(),
@@ -28,6 +30,12 @@ const schema = a.schema({
       a.allow.public("iam").to(["create", "read"]),
       a.allow.specificGroup("Support"),
     ]),
+  // ThreadObserved: a
+  //   .model({
+  //     thread: a.belongsTo("Thread"),
+  //     owner: a.string().required(),
+  //   })
+  //   .authorization([a.allow.specificGroup("Support")]),
 });
 
 export type Schema = ClientSchema<typeof schema>;
