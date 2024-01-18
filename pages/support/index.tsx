@@ -29,9 +29,11 @@ function Support({ signOut, user }: WithAuthenticatorProps) {
   useEffect(() => {
     if (supportThreadManager && selectedThread) {
       setDisplayedMessages(supportThreadManager.getCurrentMessagesFor(selectedThread) ?? [])
-      supportThreadManager.messageChangesFor(selectedThread).subscribe(() => {
-        console.log('asd')
-        setDisplayedMessages(supportThreadManager.getCurrentMessagesFor(selectedThread) ?? [])
+      supportThreadManager.messageChangesFor(selectedThread).subscribe((type) => {
+        if(type === 'message') {
+          console.log('x')
+          setDisplayedMessages(supportThreadManager.getCurrentMessagesFor(selectedThread) ?? [])
+        }
       })
     }
   }, [selectedThread])
@@ -62,8 +64,15 @@ function Support({ signOut, user }: WithAuthenticatorProps) {
             <View className="overflow-y-scroll no-scrollbar" marginRight={2}
               rowSpan={{ base: 2 }}
             >
-                  {threads.map((t) => (
-                    <ThreadLink key={t.id} thread={t} isSelected={selectedThread?.id === t.id} setSelectedThread={setSelectedThread} />
+                  {supportThreadManager && threads.map((t) => (
+                    <ThreadLink
+                      key={t.id}
+                      thread={t}
+                      isSelected={selectedThread?.id === t.id}
+                      setSelectedThread={setSelectedThread}
+                      getCount={() => supportThreadManager.getCurrentMessagesCountFor(t) ?? 0}
+                      threadMessagesChanged={supportThreadManager.messageChangesFor(t)}
+                    />
                   ))}
             </View>
             <View className="overflow-y-auto">

@@ -13,11 +13,11 @@ const schema = a.schema({
       summary: a.string(),
       messages: a.hasMany("Message"),
       archived: a.boolean().default(false).required(),
-      //observations: a.hasMany("ThreadObserver"),
     })
     .authorization([
       a.allow.owner(),
       a.allow.public("iam").to(["create"]),
+      a.allow.private("iam").to(["create"]),
       a.allow.specificGroup("Support"),
     ]),
   Message: a
@@ -28,14 +28,14 @@ const schema = a.schema({
     .authorization([
       a.allow.owner(),
       a.allow.public("iam").to(["create", "read"]),
+      a.allow.private("iam").to(["create", "read"]),
       a.allow.specificGroup("Support"),
     ]),
-  // ThreadObserved: a
-  //   .model({
-  //     thread: a.belongsTo("Thread"),
-  //     owner: a.string().required(),
-  //   })
-  //   .authorization([a.allow.specificGroup("Support")]),
+  LastViewed: a
+    .model({
+      thread: a.hasOne("Thread"),
+    })
+    .authorization([a.allow.owner()]),
 });
 
 export type Schema = ClientSchema<typeof schema>;

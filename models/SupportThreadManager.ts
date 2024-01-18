@@ -8,25 +8,35 @@ function maxOfDates(dates: Date[]): Date | undefined {
   return dates.reduce((a, b) => (a > b ? a : b));
 }
 
-async function lasteMessageObservedDateFor(
+async function threadLastViewedAt(
   thread: Schema["Thread"]
 ): Promise<Date | undefined> {
-  // const { userId } = await getCurrentUser();
-  // const observedMessages = await client.models.MessageObserved.list({
-  //   filter: {
-  //     and: [
-  //       { messageObservedThreadId: { eq: thread.id } },
-  //       { owner: { eq: userId } },
-  //     ],
-  //   },
-  //   selectionSet: ["createdAt"],
-  // });
-  // const observedDates = observedMessages.data.map(
-  //   (seen) => new Date(seen.createdAt)
-  // );
-  // return maxOfDates(observedDates);
-  return undefined;
+  const lastViewedDates = await client.models.LastViewed.list({
+    filter: { lastViewedThreadId: { eq: thread.id } },
+  });
+  const viewingDates = lastViewedDates.data.map(
+    (seen) => new Date(seen.updatedAt)
+  );
+
+  return maxOfDates(viewingDates);
 }
+
+async function updateLastSeen(threadId: string) {
+  const lastViewedDates = await client.models.LastViewed.list({
+    filter: { lastViewedThreadId: { eq: threadId } },
+  });
+  if (lastViewedDates.data !== undefined && lastViewedDates.data.length === 0) {
+    client.models.LastViewed.create({ lastViewedThreadId: threadId });
+  } else {
+    const [first, ...rest] = lastViewedDates.data;
+    if (first) {
+      client.models.LastViewed.update({ id: first.id });
+    }
+    rest?.forEach((e) => client.models.LastViewed.delete({ id: first.id }));
+  }
+}
+
+type MessageUpdate = "message" | "count";
 
 export class SupportThreadManager {
   threadChangesSubscribers: Subscriber<void>[] = [];
@@ -34,8 +44,10 @@ export class SupportThreadManager {
   currentThreadMessages: Map<string, Map<string, Schema["Message"]>> =
     new Map();
   pendingMessageCount: Map<string, number> = new Map();
-  pendingMessageCountChangeSubscribers: Map<string, Subscriber<void>[]> =
-    new Map();
+  pendingMessageCountChangeSubscribers: Map<
+    string,
+    Subscriber<MessageUpdate>[]
+  > = new Map();
 
   constructor() {
     client.models.Thread.list({ filter: { archived: { eq: false } } }).then(
@@ -46,22 +58,25 @@ export class SupportThreadManager {
           this.pendingMessageCount.set(thread.id, 0);
           this.pendingMessageCountChangeSubscribers.set(thread.id, []);
           thread.messages().then(async (messagesData) => {
-            const lastSeenMessageCreatedAt = await lasteMessageObservedDateFor(
-              thread
-            );
+            const lastSeenDate = await threadLastViewedAt(thread);
+
             messagesData.data.forEach((message) => {
               this.currentThreadMessages
                 .get(thread.id)
                 ?.set(message.id, message);
               if (
-                lastSeenMessageCreatedAt === undefined ||
-                new Date(message.createdAt) > lastSeenMessageCreatedAt
+                lastSeenDate === undefined ||
+                new Date(message.createdAt) > lastSeenDate
               ) {
+                console.log(
+                  lastSeenDate === undefined,
+                  new Date(message.createdAt) > lastSeenDate
+                );
                 this.pendingMessageCount.set(
                   thread.id,
                   (this.pendingMessageCount.get(thread.id) || 0) + 1
                 );
-                this.updatedThreadMessages(thread.id);
+                this.updatedThreadMessages(thread.id, "message");
               }
             });
           });
@@ -83,7 +98,7 @@ export class SupportThreadManager {
         this.currentThreadMessages
           .get(message.threadMessagesId)
           ?.set(message.id, message);
-        this.updatedThreadMessages(message.threadMessagesId);
+        this.updatedThreadMessages(message.threadMessagesId, "message");
       }
     });
 
@@ -111,7 +126,14 @@ export class SupportThreadManager {
     arr.sort((a, b) =>
       new Date(a.updatedAt) < new Date(b.updatedAt) ? -1 : 1
     );
+    this.pendingMessageCount.set(thread.id, 0);
+    this.updatedThreadMessages(thread.id, "count");
+    updateLastSeen(thread.id);
     return arr;
+  }
+
+  getCurrentMessagesCountFor(thread: Schema["Thread"]): number {
+    return this.currentThreadMessages.get(thread.id)?.size ?? 0;
   }
 
   threadChanges(): Observable<void> {
@@ -121,8 +143,8 @@ export class SupportThreadManager {
     return observable;
   }
 
-  messageChangesFor(thread: Schema["Thread"]): Observable<void> {
-    const observable = new Observable<void>((subscriber) => {
+  messageChangesFor(thread: Schema["Thread"]): Observable<MessageUpdate> {
+    const observable = new Observable<MessageUpdate>((subscriber) => {
       this.pendingMessageCountChangeSubscribers
         .get(thread.id)
         ?.push(subscriber);
@@ -134,9 +156,9 @@ export class SupportThreadManager {
     this.threadChangesSubscribers.forEach((sub) => sub.next());
   }
 
-  private updatedThreadMessages(id: string) {
+  private updatedThreadMessages(id: string, message: MessageUpdate) {
     this.pendingMessageCountChangeSubscribers
       .get(id)
-      ?.forEach((sub) => sub.next());
+      ?.forEach((sub) => sub.next(message));
   }
 }
