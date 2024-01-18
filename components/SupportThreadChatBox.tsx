@@ -33,6 +33,10 @@ export function SupportThreadChatBox({thread, messages}: {thread: Schema['Thread
         setCurrentMessage(e.currentTarget.value);
     }
 
+    const closeThread = () => {
+        client.models.Thread.update({id: thread.id, archived: true});
+    }
+
     const sendMessage = (e: React.FormEvent) => {
         e.preventDefault();
         client.models.Message.create({threadMessagesId: thread.id, content: currentMessage})
@@ -43,13 +47,15 @@ export function SupportThreadChatBox({thread, messages}: {thread: Schema['Thread
         setTimeout(() => {
             // @ts-ignore
             messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-        }, 100)
-    }, []);
+        }, 10)
+    }, [messages]);
 
 
     return <>
-        <div className="flex flex-col h-full border shadow-md bg-white text-black">
-
+        <div className="flex flex-col h-full border shadow-md bg-white text-black relative">
+            <div className="absolute top-1 right-1 z-50">
+                <button onClick={closeThread}>Close</button>
+            </div>
             <div className="flex-1 px-4 py-4 overflow-y-auto">
                     <div>
                         {messages.map((m, i) => <MessageBubble key={m.id} message={m} />)}

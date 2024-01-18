@@ -72,6 +72,9 @@ export class SupportThreadManager {
 
     client.models.Thread.onCreate().subscribe((thread) => {
       this.currentThreads.set(thread.id, thread);
+      this.currentThreadMessages.set(thread.id, new Map());
+      this.pendingMessageCount.set(thread.id, 0);
+      this.pendingMessageCountChangeSubscribers.set(thread.id, []);
       this.updatedThreads();
     });
 

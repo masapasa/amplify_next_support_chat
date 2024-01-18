@@ -66,7 +66,7 @@ function Support({ signOut, user }: WithAuthenticatorProps) {
                     <ThreadLink key={t.id} thread={t} setSelectedThread={setSelectedThread} />
                   ))}
             </View>
-            <View>
+            <View className="overflow-y-auto">
               {selectedThread && <SupportThreadChatBox thread={selectedThread} messages={displayedMessages} />}
             </View>
           </Grid>
