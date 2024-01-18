@@ -1,6 +1,6 @@
 import { Badge, Card, Link } from "@aws-amplify/ui-react";
 import { type Schema } from '@/amplify/data/resource'
-import { Observable } from "rxjs";
+import { Observable, Subscription } from "rxjs";
 import { useEffect, useState } from "react";
 
 type Props = {
@@ -15,11 +15,14 @@ export function ThreadLink({thread, isSelected, setSelectedThread, getCount, thr
     const [count, setCount] = useState<number>(0);
 
     useEffect(() => {
-        threadMessagesChanged?.subscribe(() => {
-            setCount(getCount());
-        })
-        //setCount(getCount());
-        setTimeout(() => setCount(getCount()), 1000);
+        let sub: Subscription | undefined;
+        setTimeout(() => {
+            sub = threadMessagesChanged?.subscribe(() => {
+                setCount(getCount());
+            })
+            setCount(getCount())}
+         , 1000);
+        return () => sub?.unsubscribe();
     }, [])
 
     const date = new Date(thread.createdAt);
@@ -31,9 +34,10 @@ export function ThreadLink({thread, isSelected, setSelectedThread, getCount, thr
             <Card variation='elevated' backgroundColor={isSelected? 'darkgray' : 'slategray'}>
                 {timeStr}
                 <div className="absolute right-3 top-3">
-                <Badge>
-                {count}
-                </Badge></div>
+                    {count > 0 ? (
+                <Badge backgroundColor={'darkmagenta'}>
+                <span className=" text-white">{count}</span>
+                </Badge>) : null}</div>
             </Card>
         </Link>
     </div>

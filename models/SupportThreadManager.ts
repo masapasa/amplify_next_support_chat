@@ -36,7 +36,7 @@ async function updateLastSeen(threadId: string) {
   }
 }
 
-type MessageUpdate = "message" | "count";
+export type MessageUpdate = "message" | "count";
 
 export class SupportThreadManager {
   threadChangesSubscribers: Subscriber<void>[] = [];
@@ -95,6 +95,10 @@ export class SupportThreadManager {
         this.currentThreadMessages
           .get(message.threadMessagesId)
           ?.set(message.id, message);
+        this.pendingMessageCount.set(
+          message.threadMessagesId,
+          (this.pendingMessageCount.get(message.threadMessagesId) || 0) + 1
+        );
         this.updatedThreadMessages(message.threadMessagesId, "message");
       }
     });
@@ -130,7 +134,7 @@ export class SupportThreadManager {
   }
 
   getCurrentMessagesCountFor(thread: Schema["Thread"]): number {
-    return this.currentThreadMessages.get(thread.id)?.size ?? 0;
+    return this.pendingMessageCount.get(thread.id) ?? 0;
   }
 
   threadChanges(): Observable<void> {

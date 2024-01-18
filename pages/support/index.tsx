@@ -5,8 +5,9 @@ import { type Schema } from '@/amplify/data/resource'
 import { useEffect, useState } from 'react'
 import { ThreadLink } from '@/components/ThreadLink'
 import { client } from '@/models/clients/supportDataClient';
-import { SupportThreadManager } from '@/models/SupportThreadManager';
+import { MessageUpdate, SupportThreadManager } from '@/models/SupportThreadManager';
 import { SupportThreadChatBox } from '@/components/SupportThreadChatBox'
+import { Observable, Subscription } from 'rxjs'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -26,16 +27,20 @@ function Support({ signOut, user }: WithAuthenticatorProps) {
     })
   }, [])
 
+
+
   useEffect(() => {
+    let sub: Subscription;
     if (supportThreadManager && selectedThread) {
       setDisplayedMessages(supportThreadManager.getCurrentMessagesFor(selectedThread) ?? [])
-      supportThreadManager.messageChangesFor(selectedThread).subscribe((type) => {
+      
+      sub = supportThreadManager.messageChangesFor(selectedThread).subscribe((type) => {
         if(type === 'message') {
-          console.log('x')
           setDisplayedMessages(supportThreadManager.getCurrentMessagesFor(selectedThread) ?? [])
         }
       })
     }
+    return () => sub?.unsubscribe();
   }, [selectedThread])
 
   return (
@@ -70,7 +75,7 @@ function Support({ signOut, user }: WithAuthenticatorProps) {
                       thread={t}
                       isSelected={selectedThread?.id === t.id}
                       setSelectedThread={setSelectedThread}
-                      getCount={() => supportThreadManager.getCurrentMessagesCountFor(t) ?? 0}
+                      getCount={() => (supportThreadManager.getCurrentMessagesCountFor(t) ?? 0)}
                       threadMessagesChanged={supportThreadManager.messageChangesFor(t)}
                     />
                   ))}
