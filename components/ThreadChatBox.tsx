@@ -3,10 +3,14 @@ import { Input } from '@aws-amplify/ui-react'
 import { useEffect, useState, useRef, MutableRefObject } from 'react'
 import { client } from '@/models/clients/publicDataClient';
 import { useImmer } from 'use-immer';
+import { LiaUserAstronautSolid, LiaUser } from "react-icons/lia";
 
 function MessageBubble({message}: {message: Schema['Message']}) {
     if (message.owner) {
         return <div className="flex items-center flex-row-reverse mb-4">
+            <div className="rounded-full bg-slate-500 ml-2 p-1">
+              <LiaUserAstronautSolid size={30} color='white'/>
+            </div>
             <div className="flex-1 bg-indigo-100 text-gray-800 p-2 rounded-lg mb-2 relative">
             <div>{message.content}</div>
 
@@ -15,6 +19,9 @@ function MessageBubble({message}: {message: Schema['Message']}) {
         </div>
     } else {
         return <div className="flex items-center mb-4">
+        <div className="rounded-full bg-slate-500 mr-2 p-1">
+              <LiaUser size={30} color='white'/>
+        </div>
         <div className="flex-1 bg-indigo-400 text-white p-2 rounded-lg mb-2 relative">
           <div>{message.content}</div>
     
