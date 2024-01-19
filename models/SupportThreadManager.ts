@@ -39,6 +39,7 @@ async function updateLastSeen(threadId: string) {
 export type MessageUpdate = "message" | "count";
 
 export class SupportThreadManager {
+  errorSubscribers: Subscriber<any>[] = [];
   threadChangesSubscribers: Subscriber<void>[] = [];
   currentThreads: Map<string, Schema["Thread"]> = new Map();
   currentThreadMessages: Map<string, Map<string, Schema["Message"]>> =
@@ -50,8 +51,8 @@ export class SupportThreadManager {
   > = new Map();
 
   constructor() {
-    client.models.Thread.list({ filter: { archived: { eq: false } } }).then(
-      (threadDatas) => {
+    client.models.Thread.list({ filter: { archived: { eq: false } } })
+      .then((threadDatas) => {
         if (Array.isArray(threadDatas.data)) {
           threadDatas.data.forEach((thread) => {
             this.currentThreads.set(thread.id, thread);
@@ -62,60 +63,80 @@ export class SupportThreadManager {
           });
         }
         this.updatedThreads();
-      }
-    );
+      })
+      .catch((e) => this.sendError(e));
 
-    client.models.Thread.onCreate().subscribe((thread) => {
-      this.currentThreads.set(thread.id, thread);
-      this.currentThreadMessages.set(thread.id, new Map());
-      this.pendingMessageCount.set(thread.id, 0);
-      this.pendingMessageCountChangeSubscribers.set(thread.id, []);
-      this.updatedThreads();
-    });
-
-    client.models.Thread.onUpdate().subscribe((thread) => {
-      if (thread.archived) {
-        this.currentThreadMessages.delete(thread.id);
-        this.currentThreadMessages.delete(thread.id);
-        this.pendingMessageCount.delete(thread.id);
-        this.pendingMessageCountChangeSubscribers.delete(thread.id);
-      } else {
+    client.models.Thread.onCreate().subscribe({
+      next: (thread) => {
         this.currentThreads.set(thread.id, thread);
-        this.currentThreadMessages.set(
-          thread.id,
-          this.currentThreadMessages.get(thread.id) ?? new Map()
-        );
-        this.pendingMessageCount.set(
-          thread.id,
-          this.pendingMessageCount.get(thread.id) ?? 0
-        );
-        this.pendingMessageCountChangeSubscribers.set(
-          thread.id,
-          this.pendingMessageCountChangeSubscribers.get(thread.id) ?? []
-        );
+        this.currentThreadMessages.set(thread.id, new Map());
+        this.pendingMessageCount.set(thread.id, 0);
+        this.pendingMessageCountChangeSubscribers.set(thread.id, []);
         this.updatedThreads();
-      }
+      },
+      error: (e) => {
+        this.sendError(e);
+      },
     });
 
-    client.models.Message.onCreate().subscribe((message) => {
-      if (message.threadMessagesId) {
-        this.currentThreadMessages
-          .get(message.threadMessagesId)
-          ?.set(message.id, message);
-        this.pendingMessageCount.set(
-          message.threadMessagesId,
-          (this.pendingMessageCount.get(message.threadMessagesId) || 0) + 1
-        );
-        this.updatedThreadMessages(message.threadMessagesId, "message");
-      }
+    client.models.Thread.onUpdate().subscribe({
+      next: (thread) => {
+        if (thread.archived) {
+          this.currentThreadMessages.delete(thread.id);
+          this.currentThreadMessages.delete(thread.id);
+          this.pendingMessageCount.delete(thread.id);
+          this.pendingMessageCountChangeSubscribers.delete(thread.id);
+        } else {
+          this.currentThreads.set(thread.id, thread);
+          this.currentThreadMessages.set(
+            thread.id,
+            this.currentThreadMessages.get(thread.id) ?? new Map()
+          );
+          this.pendingMessageCount.set(
+            thread.id,
+            this.pendingMessageCount.get(thread.id) ?? 0
+          );
+          this.pendingMessageCountChangeSubscribers.set(
+            thread.id,
+            this.pendingMessageCountChangeSubscribers.get(thread.id) ?? []
+          );
+          this.updatedThreads();
+        }
+      },
+      error: (e) => {
+        this.sendError(e);
+      },
     });
 
-    client.models.Thread.onUpdate().subscribe((thread) => {
-      if (thread.archived) {
-        this.currentThreads.delete(thread.id);
-        this.currentThreadMessages.delete(thread.id);
-        this.updatedThreads();
-      }
+    client.models.Message.onCreate().subscribe({
+      next: (message) => {
+        if (message.threadMessagesId) {
+          this.currentThreadMessages
+            .get(message.threadMessagesId)
+            ?.set(message.id, message);
+          this.pendingMessageCount.set(
+            message.threadMessagesId,
+            (this.pendingMessageCount.get(message.threadMessagesId) || 0) + 1
+          );
+          this.updatedThreadMessages(message.threadMessagesId, "message");
+        }
+      },
+      error: (e) => {
+        this.sendError(e);
+      },
+    });
+
+    client.models.Thread.onUpdate().subscribe({
+      next: (thread) => {
+        if (thread.archived) {
+          this.currentThreads.delete(thread.id);
+          this.currentThreadMessages.delete(thread.id);
+          this.updatedThreads();
+        }
+      },
+      error: (e) => {
+        this.sendError(e);
+      },
     });
   }
 
@@ -173,6 +194,17 @@ export class SupportThreadManager {
       }
     });
     this.updatedThreadMessages(thread.id, "message");
+  }
+
+  sendError(error: any) {
+    this.errorSubscribers.forEach((s) => s.next(error));
+  }
+
+  errors() {
+    const observable = new Observable<any>((subscriber) => {
+      this.errorSubscribers.push(subscriber);
+    });
+    return observable;
   }
 
   messageChangesFor(thread: Schema["Thread"]): Observable<MessageUpdate> {

@@ -8,16 +8,17 @@ import { client } from '@/models/clients/supportDataClient';
 import { MessageUpdate, SupportThreadManager } from '@/models/SupportThreadManager';
 import { SupportThreadChatBox } from '@/components/SupportThreadChatBox'
 import { Observable, Subscription } from 'rxjs'
+import { getCurrentUser } from 'aws-amplify/auth'
 
 const inter = Inter({ subsets: ['latin'] })
 
 function Support({ signOut, user }: WithAuthenticatorProps) {
   const { tokens } = useTheme();
   const [threads, setThreads] = useState<Schema['Thread'][]>([]);
+  const [seeingErrors, setSeeingErrors] = useState<boolean>(false);
   const [displayedMessages, setDisplayedMessages] = useState<Schema['Message'][]>([]);
   const [selectedThread, setSelectedThread] = useState<Schema['Thread'] | undefined>()
   const [supportThreadManager, setSupportThreadManager] = useState<SupportThreadManager>()
-
 
   useEffect(() => {
     const sm = new SupportThreadManager();
@@ -28,6 +29,9 @@ function Support({ signOut, user }: WithAuthenticatorProps) {
       if (selectedThread && !sm.currentThreads.has(selectedThread.id)) {
         setSelectedThread(undefined);
       }
+    })
+    sm.errors().subscribe((e) => {
+      setSeeingErrors(true)
     })
   }, [])
 
@@ -68,6 +72,15 @@ function Support({ signOut, user }: WithAuthenticatorProps) {
               <h1 className='text-4xl m-2'>Support Center</h1>
               <div className="absolute top-4 right-8"><button onClick={signOut}>Sign out</button></div>
             </View>
+            {seeingErrors && <View
+              columnSpan={2}
+            >
+              <div className="m-4 font-bold bg-red-600 p-2 rounded-md text-center">
+                There where errors trying to load the support center. 
+                Had this user been added to the &quot;<u>Support</u>&quot; group yet?
+                If not, please reach out to the system administrator to get added!
+              </div>
+            </View>}
             <View className="overflow-y-scroll no-scrollbar" marginRight={2}
               rowSpan={{ base: 2 }}
             >
