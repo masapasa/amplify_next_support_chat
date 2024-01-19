@@ -52,13 +52,15 @@ export class SupportThreadManager {
   constructor() {
     client.models.Thread.list({ filter: { archived: { eq: false } } }).then(
       (threadDatas) => {
-        threadDatas.data.forEach((thread) => {
-          this.currentThreads.set(thread.id, thread);
-          this.currentThreadMessages.set(thread.id, new Map());
-          this.pendingMessageCount.set(thread.id, 0);
-          this.pendingMessageCountChangeSubscribers.set(thread.id, []);
-          this.refreshThread(thread);
-        });
+        if (Array.isArray(threadDatas.data)) {
+          threadDatas.data.forEach((thread) => {
+            this.currentThreads.set(thread.id, thread);
+            this.currentThreadMessages.set(thread.id, new Map());
+            this.pendingMessageCount.set(thread.id, 0);
+            this.pendingMessageCountChangeSubscribers.set(thread.id, []);
+            this.refreshThread(thread);
+          });
+        }
         this.updatedThreads();
       }
     );
@@ -69,6 +71,30 @@ export class SupportThreadManager {
       this.pendingMessageCount.set(thread.id, 0);
       this.pendingMessageCountChangeSubscribers.set(thread.id, []);
       this.updatedThreads();
+    });
+
+    client.models.Thread.onUpdate().subscribe((thread) => {
+      if (thread.archived) {
+        this.currentThreadMessages.delete(thread.id);
+        this.currentThreadMessages.delete(thread.id);
+        this.pendingMessageCount.delete(thread.id);
+        this.pendingMessageCountChangeSubscribers.delete(thread.id);
+      } else {
+        this.currentThreads.set(thread.id, thread);
+        this.currentThreadMessages.set(
+          thread.id,
+          this.currentThreadMessages.get(thread.id) ?? new Map()
+        );
+        this.pendingMessageCount.set(
+          thread.id,
+          this.pendingMessageCount.get(thread.id) ?? 0
+        );
+        this.pendingMessageCountChangeSubscribers.set(
+          thread.id,
+          this.pendingMessageCountChangeSubscribers.get(thread.id) ?? []
+        );
+        this.updatedThreads();
+      }
     });
 
     client.models.Message.onCreate().subscribe((message) => {
@@ -96,7 +122,7 @@ export class SupportThreadManager {
   get getCurrentThreads(): Schema["Thread"][] {
     const arr = Array.from(this.currentThreads.values());
     arr.sort((a, b) =>
-      new Date(a.updatedAt) < new Date(b.updatedAt) ? 1 : -1
+      new Date(a.createdAt) < new Date(b.createdAt) ? 1 : -1
     );
     return arr;
   }

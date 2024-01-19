@@ -67,7 +67,6 @@ export function SupportThreadChatBox({thread, messages, setSelectedThread, refre
         }, 10)
     }, [messages]);
 
-
     return <>
         <div className="flex flex-col h-full border shadow-md bg-white text-black relative">
             <div className="z-50 bg-slate-200 p-1 pr-3 flex flex-row justify-end">

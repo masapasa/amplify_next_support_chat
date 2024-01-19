@@ -23,11 +23,13 @@ function Support({ signOut, user }: WithAuthenticatorProps) {
     const sm = new SupportThreadManager();
     setSupportThreadManager(sm)
     sm.threadChanges().subscribe(() => {
-      setThreads(sm.getCurrentThreads)
+      setThreads(sm.getCurrentThreads);
+      // If the selected thread is archived, then stop displaying it
+      if (selectedThread && !sm.currentThreads.has(selectedThread.id)) {
+        setSelectedThread(undefined);
+      }
     })
   }, [])
-
-
 
   useEffect(() => {
     let sub: Subscription;

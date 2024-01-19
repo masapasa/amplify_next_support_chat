@@ -33,6 +33,7 @@ function MessageBubble({message}: {message: Schema['Message']}) {
 
 export function ThreadChatBox({thread, clearThread}: {thread: Schema['Thread'], clearThread: () => void}) {
     const [currentMessage, setCurrentMessage] = useState<string>("");
+    const [currentThread, setCurrentThread] = useState<Schema['Thread']>();
     const [messages, updateMessages] = useImmer<Schema['Message'][]>([]);
     const messagesEndRef = useRef(null)
     
@@ -46,8 +47,14 @@ export function ThreadChatBox({thread, clearThread}: {thread: Schema['Thread'], 
         setCurrentMessage("")
     }
 
+    const closeAction = () => {
+      clearThread();
+      client.models.Thread.update({id: thread.id, archived: true});
+    }
+
     useEffect(() => {
-        const sub = client.models.Message.onCreate({filter: {threadMessagesId: {eq: thread.id}}}).subscribe((message) => {
+        setCurrentThread(thread);
+        const messageSub = client.models.Message.onCreate({filter: {threadMessagesId: {eq: thread.id}}}).subscribe((message) => {
             updateMessages((draft) => {draft.push(message)})
             
             setTimeout(() => {
@@ -56,8 +63,15 @@ export function ThreadChatBox({thread, clearThread}: {thread: Schema['Thread'], 
             }, 100)
         })
 
-        return () => sub.unsubscribe();
-    }, []);
+        const threadSub = client.models.Thread.onUpdate({filter: {id: {eq: thread.id}}}).subscribe((t) => {
+          setCurrentThread(t);
+        })
+
+        return () => {
+          messageSub.unsubscribe();
+          threadSub.unsubscribe();
+        }
+    }, [thread]);
 
 
     return <>
@@ -65,7 +79,7 @@ export function ThreadChatBox({thread, clearThread}: {thread: Schema['Thread'], 
   <div className="flex items-center justify-end border-b p-2">
 
     <div className="text-right">
-      <button className="inline-flex hover:bg-indigo-50 rounded-full p-2" type="button" onClick={clearThread}>
+      <button className="inline-flex hover:bg-indigo-50 rounded-full p-2" type="button" onClick={closeAction}>
         Close
       </button>
     </div>
@@ -73,6 +87,7 @@ export function ThreadChatBox({thread, clearThread}: {thread: Schema['Thread'], 
 
   <div className="flex-1 px-4 py-4 overflow-y-auto">
     {messages.map((m, i) => <MessageBubble key={m.id} message={m} />)}
+    {currentThread?.archived && <div className="text-sm">This session has been closed. Please close and re-open to get more assistance.</div>}
     <div ref={messagesEndRef} />
   </div>
 
@@ -80,15 +95,15 @@ export function ThreadChatBox({thread, clearThread}: {thread: Schema['Thread'], 
 
     <div className="w-full mx-2">
         <form onSubmit={sendMessage}>
-            <Input value={currentMessage} onChange={updateCurrentMessage} />
+            <Input disabled={currentThread?.archived} value={currentMessage} onChange={updateCurrentMessage} />
         </form>
     </div>
 
 
     <div>
-      <button className="inline-flex hover:bg-indigo-50 rounded-full p-2" type="button" onClick={sendMessage}>
+      <button disabled={currentThread?.archived} className="inline-flex hover:bg-indigo-50 rounded-full p-2" type="button" onClick={sendMessage}>
         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
             d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
         </svg>
       </button>

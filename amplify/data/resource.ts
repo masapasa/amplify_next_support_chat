@@ -15,8 +15,8 @@ const schema = a.schema({
       archived: a.boolean().default(false).required(),
     })
     .authorization([
-      a.allow.public("iam").to(["create"]),
-      a.allow.private("iam").to(["create"]),
+      a.allow.public("iam").to(["create", "listen", "update"]),
+      a.allow.private("iam").to(["create", "listen", "update"]),
       a.allow.specificGroup("Support"),
     ]),
   Message: a

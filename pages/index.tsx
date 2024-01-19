@@ -2,7 +2,7 @@ import Head from 'next/head'
 import { Inter } from 'next/font/google'
 import styles from '@/styles/Home.module.css'
 import { type Schema } from '@/amplify/data/resource'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ThreadChatBox } from '@/components/ThreadChatBox'
 import { client } from '@/models/clients/publicDataClient';
 
@@ -13,6 +13,16 @@ function Home() {
   const startSupportChat = async () => {
     setThread((await client.models.Thread.create({archived: false})).data);
   }
+
+  useEffect(() => {
+    if (thread) {
+      const threadMaintenance = setInterval(() => {
+        client.models.Thread.update({id: thread.id});
+      }, 60_000)
+      return () => clearInterval(threadMaintenance)
+    }
+  }, [thread])
+
   return (
     <>
       <Head>
