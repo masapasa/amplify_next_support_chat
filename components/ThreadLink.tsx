@@ -48,7 +48,7 @@ export function ThreadLink({thread, isSelected, setSelectedThread, getCount, thr
         <Link onClick={() => setSelectedThread(thread)} color={'ghostwhite'} style={{paddingBottom: '1em'}}>
             <Card variation='elevated' backgroundColor={isSelected? 'darkgray' : 'slategray'}>
                 {timeStr}
-                <div className="absolute right-3 top-3">
+                <div className="absolute right-3 top-3 flex flex-row">
                     {threadAbandoned ? 
                         <div className="rounded-full bg-slate-700 text-white"><IoMdClock size="25" /></div> : null}
                     {count > 0 ? (
