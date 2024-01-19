@@ -41,3 +41,6 @@ You can start editing the page by modifying `pages/index.tsx`. The page auto-upd
 Deploy this app directly to AWS Amplify with one click
 
 [![amplifybutton](https://oneclick.amplifyapp.com/button.svg)](https://console.aws.amazon.com/amplify/home#/deploy?repo=https://github.com/stocaaro/amplify-next-support-chat)
+
+## Post deployment
+Users will only have access to the support interface after they have been added to the "Support" user group in Cognito, which can be done in the Amplify Gen2 interface in the console, or through the Cognito console.
