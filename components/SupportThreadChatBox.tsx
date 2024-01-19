@@ -3,6 +3,7 @@ import { Input } from '@aws-amplify/ui-react'
 import { useEffect, useState, useRef, MutableRefObject } from 'react'
 import { client } from '@/models/clients/supportDataClient';
 import { LiaUserAstronautSolid, LiaUser } from "react-icons/lia";
+import { MdClose, MdRefresh } from 'react-icons/md';
 
 function MessageBubble({message}: {message: Schema['Message']}) {
     if (!message.owner) {
@@ -35,11 +36,12 @@ type Props = {
     thread: Schema['Thread'],
     messages: Schema['Message'][]
     setSelectedThread: (thread: Schema['Thread'] | undefined) => void,
+    refreshThread: () => void
 }
 
-export function SupportThreadChatBox({thread, messages, setSelectedThread}: Props) {
+export function SupportThreadChatBox({thread, messages, setSelectedThread, refreshThread}: Props) {
     const [currentMessage, setCurrentMessage] = useState<string>("");
-
+    const [visibleMessages, setVisibleMessages] = useState<Schema['Message'][]>([]);
     const messagesEndRef = useRef(null)
     
     const updateCurrentMessage = (e: React.FormEvent<HTMLInputElement>) => {
@@ -58,6 +60,7 @@ export function SupportThreadChatBox({thread, messages, setSelectedThread}: Prop
     }
 
     useEffect(() => {
+        setVisibleMessages(messages)
         setTimeout(() => {
             // @ts-ignore
             messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -67,12 +70,17 @@ export function SupportThreadChatBox({thread, messages, setSelectedThread}: Prop
 
     return <>
         <div className="flex flex-col h-full border shadow-md bg-white text-black relative">
-            <div className="absolute top-1 right-1 z-50">
-                <button onClick={closeThread}>Close</button>
+            <div className="z-50 bg-slate-200 p-1 pr-3 flex flex-row justify-end">
+                <button onClick={async () => {setVisibleMessages([]); await refreshThread(); setSelectedThread(thread)}} className="flex flex-row rounded-md p-1  mr-2 bg-slate-600 text-slate-300">
+                    <MdRefresh className="relative" style={{top: 0}}  size="20" />
+                </button>
+                <button onClick={closeThread} className="flex flex-row rounded-md p-1 bg-red-700 text-red-200">
+                    <MdClose className="relative" style={{top: 0}}  size="20" />
+                </button>
             </div>
             <div className="flex-1 px-4 py-4 overflow-y-auto">
                     <div>
-                        {messages.map((m, i) => <MessageBubble key={m.id} message={m} />)}
+                        {visibleMessages.map((m, i) => <MessageBubble key={m.id} message={m} />)}
                         <div ref={messagesEndRef} />
                     </div>
             </div>
@@ -89,7 +97,7 @@ export function SupportThreadChatBox({thread, messages, setSelectedThread}: Prop
                 <div>
                 <button className="inline-flex hover:bg-indigo-50 rounded-full p-2" type="button" onClick={sendMessage}>
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
                         d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                 </button>

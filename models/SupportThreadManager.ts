@@ -57,26 +57,7 @@ export class SupportThreadManager {
           this.currentThreadMessages.set(thread.id, new Map());
           this.pendingMessageCount.set(thread.id, 0);
           this.pendingMessageCountChangeSubscribers.set(thread.id, []);
-          thread.messages().then(async (messagesData) => {
-            const lastSeenDate = await threadLastViewedAt(thread);
-
-            messagesData.data.forEach((message) => {
-              this.currentThreadMessages
-                .get(thread.id)
-                // @ts-ignore
-                ?.set(message.id, message);
-              if (
-                lastSeenDate === undefined ||
-                new Date(message.createdAt) > lastSeenDate
-              ) {
-                this.pendingMessageCount.set(
-                  thread.id,
-                  (this.pendingMessageCount.get(thread.id) || 0) + 1
-                );
-                this.updatedThreadMessages(thread.id, "message");
-              }
-            });
-          });
+          this.refreshThread(thread);
         });
         this.updatedThreads();
       }
@@ -142,6 +123,30 @@ export class SupportThreadManager {
       this.threadChangesSubscribers.push(subscriber);
     });
     return observable;
+  }
+
+  async refreshThread(thread: Schema["Thread"]) {
+    this.currentThreadMessages.set(thread.id, new Map());
+    const messagesData = await thread.messages();
+    const lastSeenDate = await threadLastViewedAt(thread);
+
+    messagesData.data.forEach((message) => {
+      this.currentThreadMessages
+        .get(thread.id)
+        // @ts-ignore
+        ?.set(message.id, message);
+      if (
+        lastSeenDate === undefined ||
+        new Date(message.createdAt) > lastSeenDate
+      ) {
+        this.pendingMessageCount.set(
+          thread.id,
+          (this.pendingMessageCount.get(thread.id) || 0) + 1
+        );
+        this.updatedThreadMessages(thread.id, "message");
+      }
+    });
+    this.updatedThreadMessages(thread.id, "message");
   }
 
   messageChangesFor(thread: Schema["Thread"]): Observable<MessageUpdate> {

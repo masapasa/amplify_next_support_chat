@@ -81,7 +81,12 @@ function Support({ signOut, user }: WithAuthenticatorProps) {
                   ))}
             </View>
             <View className="overflow-y-auto">
-              {selectedThread && <SupportThreadChatBox thread={selectedThread} setSelectedThread={setSelectedThread} messages={displayedMessages} />}
+              {selectedThread && <SupportThreadChatBox
+                thread={selectedThread}
+                setSelectedThread={setSelectedThread}
+                messages={displayedMessages}
+                refreshThread={async () => {await supportThreadManager?.refreshThread(selectedThread)}}
+              />}
             </View>
           </Grid>
         </Flex>
